@@ -1,12 +1,21 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #0f7ee5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  /* Fallback gradient while background image loads */
+  background: linear-gradient(145deg, #0b5cad 0%, #0f7ee5 100%);
+  /* Custom background that covers everything */
+  background-image: url('https://i.ibb.co/PsQf7GKd/hatter.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
+
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
@@ -23,6 +32,7 @@ code {
 
 .upload_title {
   text-align: center;
+  color: #6d6d6d;
 }
 
 .menu {
@@ -251,3 +261,7 @@ code {
 
   }
 }
+
+ .file {
+  color: #44330D !important; 
+ }

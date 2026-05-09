@@ -42,10 +42,10 @@ export default function Upload() {
         <>
             <div className='form_wrapper'>
                 <form onSubmit={handleSubmit}>
-                <h2 className='upload_title'>Upload a photo from our wedding day!</h2>
-                    <label className='file' htmlFor="files" >Choose a photo!</label>
+                <h2 className='upload_title'>Töltsd fel a képeidet az eseményről!!</h2>
+                    <label className='file' htmlFor="files" >válasz képét!</label>
                     <input id="files" onChange={handleFileChange} type="file" />
-                    <button className='file' type='submit'>Upload<CloudUploadTwoToneIcon/></button>
+                    <button className='file' type='submit'>feltöltés<CloudUploadTwoToneIcon/></button>
                 </form>
             </div>
         </>
