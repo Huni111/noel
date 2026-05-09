@@ -1,9 +1,11 @@
-import {Client} from 'appwrite';
+import { Client, Storage } from 'appwrite';
 
 const client = new Client();
 
 client
-    .setEndpoint('https://cloud.appwrite.io/v1')
-    .setProject('667567b9002c639b598a');
+    .setEndpoint('https://fra.cloud.appwrite.io/v1')
+    .setProject('69fb57260028db60c6ee');
+
+export const storage = new Storage(client);
 
 export default client;

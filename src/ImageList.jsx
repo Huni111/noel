@@ -1,150 +1,135 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal.jsx';
 import { fetchImagesFromAppwrite } from './config/fetchImage.js';
 import { fetchMoreImagesFromAppwrite } from './config/fetchMoreImage.js';
-import client from './config/appwrite_config';
-import { Storage, ID } from 'appwrite';
-
-const storage = new Storage(client);
-
+import { storage } from './config/appwrite_config';
 
 export default function List() {
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [clickedImg, setClickedImg] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(null);
-  const bucketId = import.meta.env.VITE_BUCKET_ID;
+  const bucketId = String(import.meta.env.VITE_BUCKET_ID);
+  const projectId = '69fb57260028db60c6ee'; // Your project ID from config
 
-
-
-
+  // Load initial images
   useEffect(() => {
-    const fetch = async () => {
-      const img = await fetchImagesFromAppwrite();
+    const loadInitialImages = async () => {
+      setIsLoading(true);
+      try {
+        const result = await fetchImagesFromAppwrite();
+        console.log('Initial fetch result:', result);
+        if (result && Array.isArray(result.ids)) {
+          setImages(result.ids);
+        } else {
+          console.warn('Unexpected response from fetchImagesFromAppwrite', result);
+          setImages([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch initial images:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadInitialImages();
+  }, []);
 
-      setImages(img.ids)
-      
-
-      
-       
-      //     setCursor(img.nextCursor);
-    }
-
-    fetch();
-  }, [])
-
-  // fetchMore function here!
-
+  // Load more images (pagination)
   const fetchMoreImages = async () => {
+    if (isLoading) return;
     setIsLoading(true);
-
     try {
-      
-      const cursor = images[images.length - 1].$id;
-      
-      
-      const nextImages  = await fetchMoreImagesFromAppwrite(cursor);
-      
-      setImages([...images, ...nextImages.ids]);
-      
-
+      const lastImage = images[images.length - 1];
+      const cursor = lastImage?.$id;
+      if (!cursor) {
+        console.warn('No cursor available, cannot fetch more');
+        return;
+      }
+      const nextResult = await fetchMoreImagesFromAppwrite(cursor);
+      if (nextResult && Array.isArray(nextResult.ids) && nextResult.ids.length > 0) {
+        setImages(prevImages => [...prevImages, ...nextResult.ids]);
+      }
     } catch (err) {
       console.error('Error fetching more images:', err);
-
-    }finally{
-      setIsLoading(false)
+    } finally {
+      setIsLoading(false);
     }
-
-
-
-
-    
-
-
-  }
-
-  // fetchMore function here!
-
-  const handleClick = (item, index) => {
-
-    setCurrentIndex(index);
-    setClickedImg(item);
   };
 
-  const handelRotationRight = () => {
+  // Open modal when clicking an image
+  const handleClick = (imageUrl, index) => {
+    setCurrentIndex(index);
+    setClickedImg(imageUrl);
+  };
+
+  // Right arrow (next image)
+  const handleRotationRight = () => {
     const totalLength = images.length;
-    if (currentIndex + 1 >= totalLength) {
-      setCurrentIndex(0);
-      const newUrl = storage.getFilePreview(bucketId, images[0].$id);
-      setClickedImg(newUrl);
-      return;
-    }
-    const newIndex = currentIndex + 1;
-    const newUrl = images.filter((item) => {
-      return images.indexOf(item) === newIndex;
-    });
-    const newItem = storage.getFilePreview(bucketId, newUrl[0].$id);
-    setClickedImg(newItem);
+    if (totalLength === 0) return;
+    let newIndex = currentIndex + 1;
+    if (newIndex >= totalLength) newIndex = 0;
+    const nextImage = images[newIndex];
+    // Use raw view URL instead of getFilePreview
+    const newUrl = `https://fra.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${nextImage.$id}/view?project=${projectId}`;
+    setClickedImg(newUrl);
     setCurrentIndex(newIndex);
   };
 
-  const handelRotationLeft = () => {
+  // Left arrow (previous image)
+  const handleRotationLeft = () => {
     const totalLength = images.length;
-    if (currentIndex === 0) {
-      setCurrentIndex(totalLength - 1);
-      const newUrl = storage.getFilePreview(bucketId, images[totalLength - 1].$id);
-      setClickedImg(newUrl);
-      return;
-    }
-    const newIndex = currentIndex - 1;
-    const newUrl = images.filter((item) => {
-      return images.indexOf(item) === newIndex;
-    });
-    const newItem = storage.getFilePreview(bucketId, newUrl[0].$id);
-    setClickedImg(newItem);
+    if (totalLength === 0) return;
+    let newIndex = currentIndex - 1;
+    if (newIndex < 0) newIndex = totalLength - 1;
+    const prevImage = images[newIndex];
+    const newUrl = `https://fra.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${prevImage.$id}/view?project=${projectId}`;
+    setClickedImg(newUrl);
     setCurrentIndex(newIndex);
   };
 
   return (
     <>
       <div className="wrapper">
+        {!bucketId && <p style={{color: 'red'}}>Error: VITE_BUCKET_ID is undefined!</p>}
 
         {images.length > 0 ? (
-          images.map((image, index) => (
-            image.$id ? (
+          images.map((image, index) => {
+            // Use raw Appwrite view URL (no SDK preview, works with public bucket)
+            const imageUrl = `https://fra.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${image.$id}/view?project=${projectId}`;
+            console.log(`Image ${index} URL:`, imageUrl); // Debug: check console
+            return (
               <img
-                key={index}
-                src={storage.getFilePreview(bucketId, image.$id)}
-                alt={""}
-                onClick={() => handleClick(storage.getFilePreview(bucketId, image.$id), index)}
+                key={image.$id}
+                src={imageUrl}
+                alt=""
+                onError={(e) => {
+                  console.error(`Failed to load image ${image.$id}`, e);
+                  e.target.src = 'https://via.placeholder.com/300?text=Image+not+loaded';
+                }}
+                onClick={() => handleClick(imageUrl, index)}
               />
-            ) : (
-              <p key={index}>Invalid image ID</p>
-            )
-          ))
+            );
+          })
         ) : (
-          <p>Képek betőltése...</p>
+          <p>{isLoading ? 'Betöltés...' : 'Nincsenek képek'}</p>
         )}
-
-
 
         {clickedImg && (
           <Modal
             clickedImg={clickedImg}
-            handelRotationRight={handelRotationRight}
+            handelRotationRight={handleRotationRight}
             setClickedImg={setClickedImg}
-            handelRotationLeft={handelRotationLeft}
+            handelRotationLeft={handleRotationLeft}
           />
         )}
       </div>
 
-      <div className='footer'>
-
-        {isLoading && <h3>Betőltés...</h3>}
-
-        <button className='file' onClick={fetchMoreImages} disabled={isLoading}>More photos!</button>
+      <div className="footer">
+        {isLoading && <h3>Betöltés...</h3>}
+        <button className="file" onClick={fetchMoreImages} disabled={isLoading}>
+          Meg tobb kep!
+        </button>
       </div>
     </>
   );
-
 }

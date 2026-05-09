@@ -1,31 +1,20 @@
-import client from './appwrite_config';
-import { Storage, ID, Query } from 'appwrite';
+// config/fetchMoreImage.js
+import { storage } from './appwrite_config';
+import { Query } from 'appwrite';
 
-
-const storage = new Storage(client);
-
+const bucketId = import.meta.env.VITE_BUCKET_ID;
 
 export async function fetchMoreImagesFromAppwrite(cursor) {
-
-
-
   try {
-    console.log(cursor)
-    const response = await storage.listFiles(
-      '66757aad001209759337',
-      [
-        Query.limit(10),
-        Query.cursorAfter(cursor)
-      ]
-    );
-    const images = response.files.filter((file) => file.mimeType.startsWith('image/')) // Filter for images
-    const ids = images.map(item => item);
-    console.log(ids)
-    return {
-      ids
-    };
+    if (!cursor) return { ids: [] };
+    const response = await storage.listFiles(bucketId, [
+      Query.limit(10),
+      Query.cursorAfter(cursor)
+    ]);
+    const images = response.files.filter(file => file.mimeType.startsWith('image/'));
+    return { ids: images };
   } catch (error) {
-    console.error('Error fetching images:', error);
-    return [];
+    console.error('Error fetching more images:', error);
+    return { ids: [] };
   }
 }
